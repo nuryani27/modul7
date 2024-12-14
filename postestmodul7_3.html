@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Mahasiswa</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    table, th, td {
+      border: 1px solid #ccc;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+    }
+    button {
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+    .form-group {
+      margin-bottom: 10px;
+    }
+    input {
+      padding: 5px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <h1>API Mahasiswa</h1>
+  <h2>Tambah Data Mahasiswa Baru</h2>
+  <form id="addItemForm">
+    <div class="form-group">
+      <label for="name">Nama:</label>
+      <input type="text" id="name" required>
+    </div>
+    <div class="form-group">
+      <label for="nim">NIM:</label>
+      <input type="text" id="nim" required>
+    </div>
+    <div class="form-group">
+      <label for="class">Kelas:</label>
+      <input type="text" id="class" required>
+    </div>
+    <button type="submit">Tambah</button>
+  </form>
+
+  <h2>Data Mahasiswa</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Nama</th>
+        <th>NIM</th>
+        <th>Kelas</th>
+        <th>Aksi</th>
+      </tr>
+    </thead>
+    <tbody id="inventoryTable"></tbody>
+  </table>
+
+  <script>
+    const apiUrl = "https://script.google.com/a/macros/uniku.ac.id/s/AKfycbwthlaaC9fiq_Env1k0IkahoIf10JOUG2KAStXCu_1j3RLGArvnsS4dIhMYrxEvvvd49Q/exec"; // Ganti dengan URL Web App Anda
+
+    // Fungsi untuk membaca data mahasiswa
+    async function fetchInventory() {
+      const response = await fetch(`${apiUrl}?action=read`);
+      const data = await response.json();
+      renderTable(data);
+    }
+
+    // Fungsi untuk menampilkan data di tabel
+    function renderTable(data) {
+      const tableBody = document.getElementById("inventoryTable");
+      tableBody.innerHTML = ""; // Bersihkan tabel
+
+      data.forEach(item => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${item.Nama}</td>
+          <td>${item.NIM}</td>
+          <td>${item.Kelas}</td>
+          <td>
+            <button onclick="deleteItem('${item.NIM}')">Hapus</button>
+          </td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+
+    // Fungsi untuk menambahkan data baru
+    document.getElementById("addItemForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const name = document.getElementById("name").value;
+      const nim = document.getElementById("nim").value;
+      const className = document.getElementById("class").value;
+
+      const newItem = {
+        Nama: name,
+        NIM: nim,
+        Kelas: className
+      };
+
+      const response = await fetch(`${apiUrl}?action=create`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(newItem)
+      });
+
+      if (response.ok) {
+        alert("Data berhasil ditambahkan!");
+        fetchInventory(); // Refresh data mahasiswa
+      } else {
+        alert("Gagal menambahkan data.");
+      }
+
+      e.target.reset(); // Reset form
+    });
+
+    // Fungsi untuk menghapus data mahasiswa
+    async function deleteItem(nim) {
+      const confirmed = confirm("Apakah Anda yakin ingin menghapus data ini?");
+      if (confirmed) {
+        const response = await fetch(`${apiUrl}?action=delete&nim=${nim}`, {
+          method: "POST"
+        });
+
+        if (response.ok) {
+          alert("Data berhasil dihapus!");
+          fetchInventory(); // Refresh data mahasiswa
+        } else {
+          alert("Gagal menghapus data.");
+        }
+      }
+    }
+
+    // Load data mahasiswa saat halaman dimuat
+    fetchInventory();
+  </script>
+</body>
+</html>

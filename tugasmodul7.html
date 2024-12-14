@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRUD Lowongan Pekerjaan</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</head>
+<body>
+    <div class="container mt-5">
+        <h2 class="text-center">CRUD Lowongan Pekerjaan</h2>
+
+        <!-- Form untuk Tambah/Perbarui Data -->
+        <form id="guestForm" class="mb-4">
+            <div class="form-group">
+                <label for="guestJudul">Judul:</label>
+                <input type="text" class="form-control" id="guestJudul" required>
+            </div>
+            <div class="form-group">
+                <label for="guestDeskripsi">Deskripsi:</label>
+                <textarea class="form-control" id="guestDeskripsi" rows="3" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="guestPerusahaan">Perusahaan:</label>
+                <input type="text" class="form-control" id="guestPerusahaan" required>
+            </div>
+            <div class="form-group">
+                <label for="guestLokasi">Lokasi:</label>
+                <input type="text" class="form-control" id="guestLokasi" required>
+            </div>
+            <button type="submit" class="btn btn-primary" id="submitBtn">Add Lowongan</button>
+        </form>
+
+        <!-- Form untuk Pencarian Data -->
+        <form id="searchForm" class="mb-4">
+            <div class="form-group">
+                <label for="searchQuery">Cari:</label>
+                <input type="text" class="form-control" id="searchQuery" placeholder="Masukkan kata kunci">
+            </div>
+            <button type="submit" class="btn btn-secondary">Search</button>
+        </form>
+
+        <!-- Tabel untuk Menampilkan Data -->
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Judul</th>
+                    <th>Deskripsi</th>
+                    <th>Perusahaan</th>
+                    <th>Lokasi</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="guestTableBody">
+                <!-- Data akan diisi secara dinamis -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- JavaScript untuk CRUD dan Interaksi dengan Google Apps Script -->
+    <script>
+        $(document).ready(function () {
+            const script_url = 'https://script.google.com/a/macros/uniku.ac.id/s/AKfycbybX1kIwLhb7yVq8rlra58G6CbdVoLJmgzOfvcoRLXm3q7ltj3tn0RbfeALnD8D3cJCNA/exec';
+
+            // Load data saat halaman pertama kali dibuka
+            loadGuests();
+
+            // Handle form submit untuk tambah data
+            $('#guestForm').on('submit', function (event) {
+                event.preventDefault();
+                const judul = $('#guestJudul').val();
+                const deskripsi = $('#guestDeskripsi').val();
+                const perusahaan = $('#guestPerusahaan').val();
+                const lokasi = $('#guestLokasi').val();
+
+                $.ajax({
+                    url: script_url,
+                    type: "GET",
+                    dataType: "jsonp",
+                    data: {
+                        judul: judul,
+                        deskripsi: deskripsi,
+                        perusahaan: perusahaan,
+                        lokasi: lokasi,
+                        action: 'insert'
+                    },
+                    success: function (response) {
+                        alert(response.result);
+                        $('#guestForm')[0].reset(); // Reset form
+                        loadGuests(); // Refresh data
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.error("Insert failed:", textStatus, errorThrown);
+                    }
+                });
+            });
+
+            // Load data ke tabel
+            function loadGuests() {
+                $.ajax({
+                    url: script_url,
+                    type: "GET",
+                    data: { action: "read" },
+                    dataType: "json",
+                    success: function (response) {
+                        const tbody = $('#guestTableBody');
+                        tbody.empty(); // Bersihkan tabel sebelum menambahkan data baru
+
+                        response.forEach(guest => {
+                            tbody.append(`
+                                <tr>
+                                    <td>${guest.Judul}</td>
+                                    <td>${guest.Deskripsi}</td>
+                                    <td>${guest.Perusahaan}</td>
+                                    <td>${guest.Lokasi}</td>
+                                    <td>
+                                        <button class="btn btn-warning btn-sm" onclick="populateForm('${guest.Judul}', '${guest.Deskripsi}', '${guest.Perusahaan}', '${guest.Lokasi}')">Edit</button>
+                                        <button class="btn btn-danger btn-sm" onclick="deleteGuest('${guest.Judul}')">Delete</button>
+                                    </td>
+                                </tr>
+                            `);
+                        });
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.error("Load failed:", textStatus, errorThrown);
+                    }
+                });
+            }
+
+            // Populate form untuk edit data
+            window.populateForm = function (judul, deskripsi, perusahaan, lokasi) {
+                $('#guestJudul').val(judul);
+                $('#guestDeskripsi').val(deskripsi);
+                $('#guestPerusahaan').val(perusahaan);
+                $('#guestLokasi').val(lokasi);
+                $('#submitBtn').text('Update Lowongan').off('click').on('click', function (event) {
+                    event.preventDefault();
+                    updateGuest(judul);
+                });
+            };
+
+            // Update data
+            function updateGuest(oldJudul) {
+                const judul = $('#guestJudul').val();
+                const deskripsi = $('#guestDeskripsi').val();
+                const perusahaan = $('#guestPerusahaan').val();
+                const lokasi = $('#guestLokasi').val();
+
+                $.ajax({
+                    url: script_url,
+                    type: "GET",
+                    dataType: "jsonp",
+                    data: {
+                        oldJudul: oldJudul, // Judul lama sebagai referensi
+                        judul: judul,
+                        deskripsi: deskripsi,
+                        perusahaan: perusahaan,
+                        lokasi: lokasi,
+                        action: 'update'
+                    },
+                    success: function (response) {
+                        alert(response.result);
+                        $('#guestForm')[0].reset(); // Reset form
+                        $('#submitBtn').text('Add Lowongan').off('click').on('click', function (event) {
+                            event.preventDefault();
+                            $('#guestForm').trigger('submit'); // Kembali ke fungsi insert
+                        });
+                        loadGuests(); // Refresh data
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.error("Update failed:", textStatus, errorThrown);
+                    }
+                });
+            }
+
+            // Hapus data
+            window.deleteGuest = function (judul) {
+                if (confirm("Are you sure you want to delete this record?")) {
+                    $.ajax({
+                        url: script_url,
+                        type: "GET",
+                        dataType: "jsonp",
+                        data: { judul: judul, action: "delete" },
+                        success: function (response) {
+                            alert(response.result);
+                            loadGuests(); // Refresh data
+                        },
+                        error: function (jqXHR, textStatus, errorThrown) {
+                            console.error("Delete failed:", textStatus, errorThrown);
+                        }
+                    });
+                }
+            };
+
+            // Cari data
+            $('#searchForm').on('submit', function (event) {
+                event.preventDefault();
+                const query = $('#searchQuery').val();
+
+                $.ajax({
+                    url: script_url,
+                    type: "GET",
+                    dataType: "json",
+                    data: { query: query, action: "search" },
+                    success: function (response) {
+                        const tbody = $('#guestTableBody');
+                        tbody.empty(); // Bersihkan tabel
+
+                        response.forEach(guest => {
+                            tbody.append(`
+                                <tr>
+                                    <td>${guest.Judul}</td>
+                                    <td>${guest.Deskripsi}</td>
+                                    <td>${guest.Perusahaan}</td>
+                                    <td>${guest.Lokasi}</td>
+                                    <td>
+                                        <button class="btn btn-warning btn-sm" onclick="populateForm('${guest.Judul}', '${guest.Deskripsi}', '${guest.Perusahaan}', '${guest.Lokasi}')">Edit</button>
+                                        <button class="btn btn-danger btn-sm" onclick="deleteGuest('${guest.Judul}')">Delete</button>
+                                    </td>
+                                </tr>
+                            `);
+                        });
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.error("Search failed:", textStatus, errorThrown);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
